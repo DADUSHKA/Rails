@@ -243,7 +243,7 @@ db_namespace = namespace :db do
 
     desc 'Load a schema.rb file into the database'
     task :load => [:environment, :load_config] do
-      ActiveRecord::Tasks::DatabaseTasks.load_schema(:ruby, ENV['SCHEMA'])
+      ActiveRecord::Tasks::DatabaseTasks.load_schema_current(:ruby, ENV['SCHEMA'])
     end
 
     task :load_if_ruby => ['db:create', :environment] do
@@ -289,7 +289,7 @@ db_namespace = namespace :db do
 
     desc "Recreate the databases from the structure.sql file"
     task :load => [:environment, :load_config] do
-      ActiveRecord::Tasks::DatabaseTasks.load_schema(:sql, ENV['DB_STRUCTURE'])
+      ActiveRecord::Tasks::DatabaseTasks.load_schema_current(:sql, ENV['DB_STRUCTURE'])
     end
 
     task :load_if_sql => ['db:create', :environment] do
@@ -320,9 +320,8 @@ db_namespace = namespace :db do
     task :load_schema => %w(db:test:deprecated db:test:purge) do
       begin
         should_reconnect = ActiveRecord::Base.connection_pool.active_connection?
-        ActiveRecord::Base.establish_connection(ActiveRecord::Base.configurations['test'])
         ActiveRecord::Schema.verbose = false
-        db_namespace["schema:load"].invoke
+        ActiveRecord::Tasks::DatabaseTasks.load_schema ActiveRecord::Base.configurations['test'], :ruby, ENV['SCHEMA']
       ensure
         if should_reconnect
           ActiveRecord::Base.establish_connection(ActiveRecord::Base.configurations[ActiveRecord::Tasks::DatabaseTasks.env])
